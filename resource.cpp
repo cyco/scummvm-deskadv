@@ -430,7 +430,53 @@ bool Resource::load(const char *filename, bool isYoda) {
                     debugC(1, kDebugResource, " (hotspot, type: %04x, x: %04x, y: %04x, arg1: %04x, arg2 %04x", type, x, y, arg1, arg2);
                 }
             }
-		} else {
+        } else if (tag == MKTAG('A','C','T','N')) { // action data
+            uint32 ignoredCategorySize = _file->readUint32LE();
+
+            uint16 zoneId = 0xFFFF;
+            while (!_vm->shouldQuit() && (zoneId = _file->readUint16LE()) != 0xFFFF) {
+                // IACT entries
+                uint16 iactCount = _file->readUint16LE();
+                debugC(1, kDebugResource, " IACT count: %d", iactCount);
+                for (uint16 j = 0; j < iactCount; j++) {
+                    tag = _file->readUint32BE();
+                    assert (tag == MKTAG('I','A','C','T'));
+                    uint32 ignored6 = _file->readUint32LE();
+                    uint16 conditionCount = _file->readUint16LE();
+                    debugC(1, kDebugResource, "  ACTN: unknown %08x, count1 %d", ignored6, conditionCount);
+                    for (uint16 k = 0; k < conditionCount; k++) {
+                        uint16 opcode = _file->readUint16LE();
+                        uint16 arg1 = _file->readUint16LE();
+                        uint16 arg2 = _file->readUint16LE();
+                        uint16 arg3 = _file->readUint16LE();
+                        uint16 arg4 = _file->readUint16LE();
+                        uint16 arg5 = _file->readUint16LE();
+                        uint16 strlen = _file->readUint16LE();
+                        debugC(1, kDebugResource, "   ACTN condition %04x(%04x, %04x, %04x, %04x, %04x, %04x)", opcode, arg1, arg2, arg3, arg4, arg5, strlen);
+                        assert(opcode < 0x26);
+                    }
+                    uint16 instructionCount = _file->readUint16LE();
+                    debugC(1, kDebugResource, "  ACTN: instruction count %d", instructionCount);
+                    for(uint16 k = 0; k < instructionCount; k++) {
+                        uint16 opcode = _file->readUint16LE();
+                        uint16 arg1 = _file->readUint16LE();
+                        uint16 arg2 = _file->readUint16LE();
+                        uint16 arg3 = _file->readUint16LE();
+                        uint16 arg4 = _file->readUint16LE();
+                        uint16 arg5 = _file->readUint16LE();
+                        debugC(1, kDebugResource, "   ACTN instruction: %04x(%04x, %04x, %04x, %04x, %04x)", opcode, arg1, arg2, arg3, arg4, arg5);
+                        assert(opcode < 0x26);
+                        uint16 strlen = _file->readUint16LE();
+                        if (strlen) {
+                            Common::String str;
+                            for (uint16 l = 0; l < strlen; l++)
+                                str += _file->readByte();
+                            debugC(1, kDebugResource, "    ACTN instruction string: \"%s\"", str.c_str());
+                        }
+                    }
+                }
+            }
+        } else {
 			uint32 size = _file->readUint32LE();
 			debugC(1, kDebugResource, "Skipping unknown tag %s, size %d", tag2str(tag), size);
 			for (uint32 i = 0; i < size; i++)
