@@ -487,11 +487,20 @@ bool Resource::load(const char *filename, bool isYoda) {
                 uint16 frames[3*8];
                 _file->read(frames, 3 * 8 * sizeof(uint16));
             }
-        /*}
-           else if (tag == MKTAG('C','H','W','P')) { // character weapon data
-
+        } else if (tag == MKTAG('C','H','W','P')) { // character weapon data
+            uint32 ignoredCategorySize = _file->readUint32LE();
+            uint16_t index = 0xFFFF;
+            while(!_vm->shouldQuit() && (index = _file->readUint16LE()) != 0xFFFF){
+                uint8 weaponData[4];
+                _file->read(weaponData, 4);
+            }
         } else if (tag == MKTAG('C','A','U','X')) { // auxiliary character data
-*/
+            uint32 ignoredCategorySize = _file->readUint32LE();
+            uint16_t index = 0xFFFF;
+            while(!_vm->shouldQuit() && (index = _file->readUint16LE()) != 0xFFFF){
+                uint8 auxData[2];
+                _file->read(auxData, 2);
+            }
         } else {
 			uint32 size = _file->readUint32LE();
 			debugC(1, kDebugResource, "Skipping unknown tag %s, size %d", tag2str(tag), size);
