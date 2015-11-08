@@ -137,7 +137,7 @@ bool Resource::load(const char *filename, bool isYoda) {
 					debugC(1, kDebugResource, "entry id %04x (%d) is \"%s\"", id, id, name.c_str());
 				}
 			}
-		} else if (tag == MKTAG('P','N','A','M')) { // Procedure Names
+		} else if (tag == MKTAG('P','N','A','M')) { // Puzzle Names
 			uint32 size = _file->readUint32LE();
 			debugC(1, kDebugResource, "Found %s tag, size %d", tag2str(tag), size);
 			uint16 count = _file->readUint16LE();
@@ -238,12 +238,13 @@ bool Resource::load(const char *filename, bool isYoda) {
 				debugCN(1, kDebugResource, "\n");
 
 				// Zone Header
+                uint16 planet = 0;
 				if (isYoda) {
-					uint16 unknown1 = _file->readUint16LE();
+					planet = _file->readUint16LE();
 					uint32 size = _file->readUint32LE();
 					uint16 zone_id = _file->readUint16LE();
 					assert (zone_id == i);
-					debugC(1, kDebugResource, "zone entry #%04x (%d): unknowns %04x, size %d", zone_id, zone_id, unknown1, size);
+					debugC(1, kDebugResource, "zone entry #%04x (%d): unknowns %04x, size %d", zone_id, zone_id, planet, size);
 				}
 
 				// IZON
@@ -253,14 +254,14 @@ bool Resource::load(const char *filename, bool isYoda) {
 				debugC(1, kDebugResource, "%s: size: %d", tag2str(tag), size);
 				uint16 width = _file->readUint16LE();
 				uint16 height = _file->readUint16LE();
-				uint32 izon_unknown1 = _file->readUint32LE();
-				uint16 izon_unknown2 = 0;
-				uint16 izon_unknown3 = 0;
+				uint32 zoneType = _file->readUint32LE();
+				uint16 padding = 0;
+				uint16 planetAgain = 0;
 				if (isYoda) {
-					izon_unknown2 = _file->readUint16LE();
-					izon_unknown3 = _file->readUint16LE();
+					padding = _file->readUint16LE(); // always 0xFFFF
+					planetAgain = _file->readUint16LE();
 				}
-				debugC(1, kDebugResource, " %dx%d entries, unknowns %08x, %04x, %04x", width, height, izon_unknown1, izon_unknown2, izon_unknown3);
+				debugC(1, kDebugResource, " %dx%d entries, unknowns %08x, %04x, %04x", width, height, zoneType, padding, planetAgain);
 
 				ZONE z;
 				z.width = width;
@@ -287,18 +288,18 @@ bool Resource::load(const char *filename, bool isYoda) {
 				if (!isYoda)
 					continue;
 
-				uint16 count2 = _file->readUint16LE();
-				debugC(1, kDebugResource, "zone count2 %d", count2);
-				for (uint16 j = 0; j < count2; j++) {
+				uint16 hotspotCount = _file->readUint16LE();
+				debugC(1, kDebugResource, "zone hospot count %d", hotspotCount);
+				for (uint16 j = 0; j < hotspotCount; j++) {
 					// TODO
 					uint32 type = _file->readUint32LE();
 					assert (type < 16);
 					const uint8 typetypes[16] = {0, 0, 0, 1, 1, 2, 3, 3, 3, 4, 7, 7, 5, 7, 6, 6};
-					uint16 u1 = _file->readUint16LE();
-					uint16 u2 = _file->readUint16LE();
-					uint16 u3 = _file->readUint16LE();
-					uint16 unknown = _file->readUint16LE();
-					debugC(1, kDebugResource, " zone count2 data: type %08x (%d), unknowns %04x, %04x, %04x, unknown data %04x", type, typetypes[type], u1, u2, u3, unknown);
+					uint16 x = _file->readUint16LE();
+					uint16 y = _file->readUint16LE();
+					uint16 arg1 = _file->readUint16LE();
+					uint16 arg2 = _file->readUint16LE();
+					debugC(1, kDebugResource, " zone hotspot data: type %08x (%d), unknowns %04x, %04x, %04x, unknown data %04x", type, typetypes[type], x, y, arg1, arg2);
 				}
 
 				// IZAX
@@ -380,36 +381,35 @@ bool Resource::load(const char *filename, bool isYoda) {
 					tag = _file->readUint32BE();
 					assert (tag == MKTAG('I','A','C','T'));
 					uint32 ignored6 = _file->readUint32LE();
-					uint16 iactItemCount1 = _file->readUint16LE();
-					debugC(1, kDebugResource, "  IACT: unknown %08x, count1 %d", ignored6, iactItemCount1);
-					for (uint16 k = 0; k < iactItemCount1; k++) {
-						uint16 u1 = _file->readUint16LE();
-						uint16 u2 = _file->readUint16LE();
-						uint16 u3 = _file->readUint16LE();
-						uint16 u4 = _file->readUint16LE();
-						uint16 u5 = _file->readUint16LE();
-						uint16 u6 = _file->readUint16LE();
-						uint16 u7 = _file->readUint16LE();
-						debugC(1, kDebugResource, "   IACT count1 data: %04x, %04x, %04x, %04x, %04x, %04x, %04x", u1, u2, u3, u4, u5, u6, u7);
+					uint16 conditionCount = _file->readUint16LE();
+					debugC(1, kDebugResource, "  IACT: unknown %08x, count1 %d", ignored6, conditionCount);
+					for (uint16 k = 0; k < conditionCount; k++) {
+						uint16 opcode = _file->readUint16LE();
+						uint16 arg1 = _file->readUint16LE();
+						uint16 arg2 = _file->readUint16LE();
+						uint16 arg3 = _file->readUint16LE();
+						uint16 arg4 = _file->readUint16LE();
+						uint16 arg5 = _file->readUint16LE();
+						uint16 strlen = _file->readUint16LE();
+						debugC(1, kDebugResource, "   IACT condition %04x(%04x, %04x, %04x, %04x, %04x, %04x)", opcode, arg1, arg2, arg3, arg4, arg5, strlen);
 					}
-					uint16 iactItemCount2 = _file->readUint16LE();
-					debugC(1, kDebugResource, "  IACT: count2 %d", iactItemCount2);
-					for(uint16 k = 0; k < iactItemCount2; k++) {
-						uint16 u1 = _file->readUint16LE();
-						uint16 u2 = _file->readUint16LE();
-						uint16 u3 = _file->readUint16LE();
-						uint16 u4 = _file->readUint16LE();
-						uint16 u5 = _file->readUint16LE();
-						uint16 u6 = _file->readUint16LE();
-						debugC(1, kDebugResource, "   IACT count2 data: %04x, %04x, %04x, %04x, %04x, %04x", u1, u2, u3, u4, u5, u6);
+					uint16 instructionCount = _file->readUint16LE();
+					debugC(1, kDebugResource, "  IACT: count2 %d", instructionCount);
+					for(uint16 k = 0; k < instructionCount; k++) {
+						uint16 opcode = _file->readUint16LE();
+						uint16 arg1 = _file->readUint16LE();
+						uint16 arg2 = _file->readUint16LE();
+						uint16 arg3 = _file->readUint16LE();
+						uint16 arg4 = _file->readUint16LE();
+						uint16 arg5 = _file->readUint16LE();
+						debugC(1, kDebugResource, "   IACT instruction: %04x(%04x, %04x, %04x, %04x, %04x)", opcode, arg1, arg2, arg3, arg4, arg5);
 						uint16 strlen = _file->readUint16LE();
 						if (strlen) {
 							Common::String str;
 							for (uint16 l = 0; l < strlen; l++)
 								str += _file->readByte();
-							debugC(1, kDebugResource, "    IACT count2 string: \"%s\"", str.c_str());
-						} else
-							debugC(1, kDebugResource, "    IACT count2 string: none");
+							debugC(1, kDebugResource, "    IACT instruction string: \"%s\"", str.c_str());
+						}
 					}
 				}
 			}
