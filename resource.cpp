@@ -276,7 +276,7 @@ bool Resource::load(const char *filename, bool isYoda) {
 						uint16 u1 = _file->readUint16LE();
 						uint16 u2 = _file->readUint16LE();
 						uint16 u3 = _file->readUint16LE();
-						debugC(1, kDebugResource, "(tile: %04x, %04x, %04x)", u1, u2, u3);
+						// debugC(1, kDebugResource, "(tile: %04x, %04x, %04x)", u1, u2, u3);
 						z.tiles[0][(j*width)+k] = u1;
 						z.tiles[1][(j*width)+k] = u2;
 						z.tiles[2][(j*width)+k] = u3;
@@ -413,6 +413,23 @@ bool Resource::load(const char *filename, bool isYoda) {
 					}
 				}
 			}
+        } else if (tag == MKTAG('H','T','S','P')) { // hotspot data
+            uint32 ignoredCategorySize = _file->readUint32LE();
+
+            uint16 zoneId = 0xFFFF;
+            while (!_vm->shouldQuit() && (zoneId = _file->readUint16LE()) != 0xFFFF) {
+                uint16 hotspotCount = _file->readUint16LE();
+                debugC(1, kDebugResource, "   %d Hotspots for zone: 0x%04x", hotspotCount, zoneId);
+                for(uint i=0; i < hotspotCount; i++){
+                    uint32 type = _file->readUint32LE();
+                    assert (type < 16);
+                    uint16 x = _file->readUint16LE();
+                    uint16 y = _file->readUint16LE();
+                    uint16 arg1 = _file->readUint16LE();
+                    uint16 arg2 = _file->readUint16LE();
+                    debugC(1, kDebugResource, " (hotspot, type: %04x, x: %04x, y: %04x, arg1: %04x, arg2 %04x", type, x, y, arg1, arg2);
+                }
+            }
 		} else {
 			uint32 size = _file->readUint32LE();
 			debugC(1, kDebugResource, "Skipping unknown tag %s, size %d", tag2str(tag), size);
