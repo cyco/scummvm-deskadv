@@ -70,18 +70,6 @@ bool Resource::load(const char *filename, bool isYoda) {
 		// unknown tag ZAX2, size 9506
 		// unknown tag ZAX3, size 4086
 		// unknown tag ZAX4, size 3660
-		// unknown tag HTSP, size 12138
-		// unknown tag ACTN, size 370217
-		//
-		// unknown tag CHAR, size 2108
-		// unknown tag CHWP, size 164
-		// unknown tag CAUX, size 110
-
-		// TODO: Missing Blocks in Yoda DTA resource file
-		// Skipping unknown tag CHAR, size 6470
-		// Skipping unknown tag CHWP, size 464
-		// Skipping unknown tag CAUX, size 310
-
 		if (tag == MKTAG('V','E','R','S')) { // Version
 			uint32 version = _file->readUint32LE();
 			debugC(1, kDebugResource, "Found VERS Tag - Version: %d", version);
@@ -476,6 +464,34 @@ bool Resource::load(const char *filename, bool isYoda) {
                     }
                 }
             }
+        } else if (tag == MKTAG('C','H','A','R')) { // character data
+            uint32 ignoredCategorySize = _file->readUint32LE();
+            debugC(1, kDebugResource, "    CHAR category size: 0x%04x", ignoredCategorySize);
+            uint16 characterIndex = 0xFFFF;
+            while (!_vm->shouldQuit() && (characterIndex = _file->readUint16LE()) != 0xFFFF) {
+                debugC(1, kDebugResource, "    CHAR index: 0x%02x", characterIndex);
+                tag = _file->readUint32BE();
+
+                assert (tag == MKTAG('I','C','H','A'));
+                uint32 size = _file->readUint32LE();
+
+                Common::String name;
+                byte character = 0;
+                while ((character = _file->readByte()) != 0)
+                    name += character;
+
+                debugC(1, kDebugResource, "    CHAR name: \"%s\"", name.c_str());
+                uint8 unknownData[size - name.size() - 1 - 3 * 8 * 2];
+                _file->read(unknownData, size - name.size() - 1 - 3 * 8 * 2);
+
+                uint16 frames[3*8];
+                _file->read(frames, 3 * 8 * sizeof(uint16));
+            }
+        /*}
+           else if (tag == MKTAG('C','H','W','P')) { // character weapon data
+
+        } else if (tag == MKTAG('C','A','U','X')) { // auxiliary character data
+*/
         } else {
 			uint32 size = _file->readUint32LE();
 			debugC(1, kDebugResource, "Skipping unknown tag %s, size %d", tag2str(tag), size);
