@@ -481,8 +481,10 @@ namespace Deskadv {
                         name += character;
 
                     debugC(1, kDebugResource, "    CHAR name: \"%s\"", name.c_str());
-                    uint8 unknownData[size - name.size() - 1 - 3 * 8 * 2];
-                    _file->read(unknownData, size - name.size() - 1 - 3 * 8 * 2);
+                    const uint unknownDataSize = size - name.size() - 1 - 3 * 8 * 2;
+                    uint8 *unknownData = new byte[unknownDataSize];
+                    _file->read(unknownData, unknownDataSize);
+                    delete [] unknownData;
 
                     uint16 frames[3*8];
                     _file->read(frames, 3 * 8 * sizeof(uint16));
@@ -512,8 +514,9 @@ namespace Deskadv {
                     assert(tag == MKTAG('I', 'Z', 'A', 'X') || tag == MKTAG('I', 'Z', 'X', '2') || tag == MKTAG('I', 'Z', 'X', '3'));
                     int size = _file->readUint16LE() - 4 - 2;
 
-                    uint izx[size];
+                    uint *izx = new uint[size];
                     _file->read(izx, size);
+                    delete [] izx;
                 }
             } else if (tag == MKTAG('Z','A','X','4')) {
                 uint32 ignoredCategorySize = _file->readUint32LE();
