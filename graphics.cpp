@@ -28,6 +28,7 @@
 #include "deskadv/palette.h"
 
 #include "common/file.h"
+#include "engines/advancedDetector.h"
 
 #include "graphics/cursorman.h"
 #include "graphics/fontman.h"
@@ -50,48 +51,42 @@ Gfx::Gfx(DeskadvEngine *vm) : _vm(vm) {
 
 	_screen = new Graphics::Surface();
 	_screen->create(screenWidth, screenHeight, Graphics::PixelFormat::createFormatCLUT8());
+    Common::String fileName;
+    uint offset = 0;
 
-	// Code to load palette from dump file
-	// TODO: Need to identify offset in executable and load from there.
-	/*Common::File palFile;
-	if (!palFile.open("deskadv.exe")) {
-		error("Failed to open deskadv.exe");
-	}
-	palFile.seek(0x33e9e, SEEK_SET); // Indy Demo
-	debug("static const uint8 palette[768] = {");
-	for(uint32 i = 0; i < 241; i++) {
-		debugN("\t0x%02x, ", palFile.readByte());
-		debugN("0x%02x, ", palFile.readByte());
-		debugN("0x%02x, ", palFile.readByte());
-		if (palFile.readByte() != 0)
-			warning("Palette Entry %d Alpha is non-zero", i);
-		debug(" // %02d", i+10);
-	}
-	debug("\t};");
-	palFile.close();*/
+    bool isDemo = _vm->getFeatures() & ADGF_DEMO;
+    if(_vm->getGameType() == GType_Yoda && isDemo){
+        fileName = "YodaDemo.exe";
+        offset   = 0x54E30;
+    } else if(_vm->getGameType() == GType_Yoda && !isDemo){
+        fileName = "Yodesk.exe";
+        offset   = 0x550F0;
+    } else if(_vm->getGameType() == GType_Indy && isDemo){
+        fileName = "DESKADV.EXE";
+        offset   = 0x33E76; // 0x33e9e
+    } else if(_vm->getGameType() == GType_Indy && !isDemo){
+        fileName = "DESKADV.EXE";
+        offset   = 0x36656;
+    } else assert(false);
 
-	const uint8 *palData;
+	Common::File palFile;
+	if (!palFile.open(fileName)) {
+		error("Failed to open %s", fileName.c_str());
+	}
+	palFile.seek(offset, SEEK_SET);
+    uint8 paletteData[0x100*4];
+    palFile.read(paletteData, 0x100*4);
+    palFile.close();
+
 	uint8 pal[256 * 3];
-	switch (_vm->getGameType()) {
-	case GType_Indy:
-		palData = indyPalette;
-		break;
-	case GType_Yoda:
-		palData = yodaPalette;
-		break;
-	default:
-		error("Unknown Game Type for Palette Setting...");
-		break;
-	}
-	// Convert Palette from stored BGR to RGB
+	// Convert Palette from stored BGRA to RGB
 	for (uint i = 0; i < 256; i++) {
-		uint8 blue = palData[(i*3)+0];
-		uint8 green = palData[(i*3)+1];
-		uint8 red = palData[(i*3)+2];
-		pal[(i*3)+0] = red;
-		pal[(i*3)+1] = green;
-		pal[(i*3)+2] = blue;
-	}
+		pal[(i*3)+0] = paletteData[(i*4)+2]; // red
+		pal[(i*3)+1] = paletteData[(i*4)+1]; // green
+		pal[(i*3)+2] = paletteData[(i*4)+0]; // blue
+        // alpha channel paletteData[(i*4)+3] ignored
+    }
+    
 	_vm->_system->getPaletteManager()->setPalette(pal, 0, 256);
 
 	_font = FontMan.getFontByUsage(Graphics::FontManager::kGUIFont);
@@ -109,7 +104,7 @@ Gfx::~Gfx() {
 }
 
 void Gfx::updateScreen(void) {
-	debugC(1, kDebugGraphics, "Gfx::updateScreen()");
+	// debugC(1, kDebugGraphics, "Gfx::updateScreen()");
 	_vm->_system->copyRectToScreen((byte *)_screen->getPixels(), _screen->pitch, 0, 0, screenWidth, screenHeight);
 	_vm->_system->updateScreen();
 }
