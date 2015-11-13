@@ -41,52 +41,57 @@ static const uint screenWidth = 532;
 static const uint screenHeight = 332;
 
 // Inventory Scroll Bar
-static const Common::Rect InvScrollOuter(504, 30, 504+16, 268);
-static const Common::Rect InvScroll(InvScrollOuter.left, InvScrollOuter.top+13, InvScrollOuter.right, InvScrollOuter.bottom-13);
-static const Common::Rect InvScrUp(InvScrollOuter.left+2, InvScrollOuter.top+2, InvScrollOuter.right-2, InvScrollOuter.top+2+9);
-static const Common::Rect InvScrDown(InvScrollOuter.left+2, InvScrollOuter.bottom-2-9, InvScrollOuter.right-2, InvScrollOuter.bottom-2);
+static const Common::Rect InvScrollOuter(504, 30, 504 + 16, 268);
+static const Common::Rect InvScroll(InvScrollOuter.left, InvScrollOuter.top + 13, InvScrollOuter.right, InvScrollOuter.bottom - 13);
+static const Common::Rect InvScrUp(InvScrollOuter.left + 2, InvScrollOuter.top + 2, InvScrollOuter.right - 2, InvScrollOuter.top + 2 + 9);
+static const Common::Rect InvScrDown(InvScrollOuter.left + 2, InvScrollOuter.bottom - 2 - 9, InvScrollOuter.right - 2, InvScrollOuter.bottom - 2);
 
 Gfx::Gfx(DeskadvEngine *vm) : _vm(vm) {
 	initGraphics(screenWidth, screenHeight, true);
 
 	_screen = new Graphics::Surface();
 	_screen->create(screenWidth, screenHeight, Graphics::PixelFormat::createFormatCLUT8());
-    Common::String fileName;
-    uint offset = 0;
+	Common::String fileName;
+	uint offset = 0;
 
-    bool isDemo = _vm->getFeatures() & ADGF_DEMO;
-    if(_vm->getGameType() == GType_Yoda && isDemo){
-        fileName = "YodaDemo.exe";
-        offset   = 0x54E30;
-    } else if(_vm->getGameType() == GType_Yoda && !isDemo){
-        fileName = "Yodesk.exe";
-        offset   = 0x550F0;
-    } else if(_vm->getGameType() == GType_Indy && isDemo){
-        fileName = "DESKADV.EXE";
-        offset   = 0x33E76; // 0x33e9e
-    } else if(_vm->getGameType() == GType_Indy && !isDemo){
-        fileName = "DESKADV.EXE";
-        offset   = 0x36656;
-    } else assert(false);
+	bool isDemo = _vm->getFeatures() & ADGF_DEMO;
+	if (_vm->getGameType() == GType_Yoda && isDemo) {
+		fileName = "YodaDemo.exe";
+		offset   = 0x54E30;
+	} else if (_vm->getGameType() == GType_Yoda && !isDemo) {
+		fileName = "Yodesk.exe";
+		offset   = 0x550F0;
+	} else if (_vm->getGameType() == GType_Indy && isDemo) {
+		fileName = "DESKADV.EXE";
+		offset   = 0x33E76; // 0x33e9e
+	} else if (_vm->getGameType() == GType_Indy && !isDemo
+	           && _vm->getPlatform() == Common::kPlatformMacintosh) {
+		fileName = "Indy’s Desktop Adventures";
+		offset   = 0x31fa8; // TODO: only read 3 bytes per color
+	} else if (_vm->getGameType() == GType_Indy
+	           && !isDemo && _vm->getPlatform() == Common::kPlatformWindows) {
+		fileName = "DESKADV.EXE";
+		offset   = 0x36656;
+	} else assert(false);
 
 	Common::File palFile;
 	if (!palFile.open(fileName)) {
 		error("Failed to open %s", fileName.c_str());
 	}
 	palFile.seek(offset, SEEK_SET);
-    uint8 paletteData[0x100*4];
-    palFile.read(paletteData, 0x100*4);
-    palFile.close();
+	uint8 paletteData[0x100 * 4];
+	palFile.read(paletteData, 0x100 * 4);
+	palFile.close();
 
 	uint8 pal[256 * 3];
 	// Convert Palette from stored BGRA to RGB
 	for (uint i = 0; i < 256; i++) {
-		pal[(i*3)+0] = paletteData[(i*4)+2]; // red
-		pal[(i*3)+1] = paletteData[(i*4)+1]; // green
-		pal[(i*3)+2] = paletteData[(i*4)+0]; // blue
-        // alpha channel paletteData[(i*4)+3] ignored
-    }
-    
+		pal[(i * 3) + 0] = paletteData[(i * 4) + 2]; // red
+		pal[(i * 3) + 1] = paletteData[(i * 4) + 1]; // green
+		pal[(i * 3) + 2] = paletteData[(i * 4) + 0]; // blue
+		// alpha channel paletteData[(i*4)+3] ignored
+	}
+
 	_vm->_system->getPaletteManager()->setPalette(pal, 0, 256);
 
 	_font = FontMan.getFontByUsage(Graphics::FontManager::kGUIFont);
@@ -114,12 +119,12 @@ void Gfx::drawTileInt(uint32 ref, uint x, uint y, byte transparentColor) {
 	byte *tile = _vm->_resource->getTileData(ref);
 	for (uint dy = 0; dy < 32; dy++) {
 		for (uint dx = 0; dx < 32; dx++) {
-			byte pixel = *(tile+(dy*32)+dx);
+			byte pixel = *(tile + (dy * 32) + dx);
 			if ((pixel != 0 && pixel < 10) || (pixel != 255 && pixel > 245))
 				warning("Gfx::drawTileInt(ref: %d) uses System Palette Index: %d", ref, pixel);
 			debugC(1, kDebugGraphics, "Gfx::drawTileInt x:%d y:%d pixel:%d", x, y, pixel);
 			if (pixel != transparentColor)
-				*((byte *)_screen->getBasePtr(x+dx, y+dy)) = pixel;
+				*((byte *)_screen->getBasePtr(x + dx, y + dy)) = pixel;
 		}
 	}
 	delete[] tile;
@@ -149,8 +154,8 @@ void Gfx::loadCursors(const char *filename) {
 
 void Gfx::setDefaultCursor() {
 	static const byte s_bwPalette[] = {
-		0x00, 0x00, 0x00,	// Black
-		0xFF, 0xFF, 0xFF	// White
+		0x00, 0x00, 0x00,   // Black
+		0xFF, 0xFF, 0xFF    // White
 	};
 
 	static const byte defaultCursor[] = {
@@ -240,16 +245,16 @@ void Gfx::loadBMP(const char *filename, uint x, uint y) {
 		const Graphics::Surface *image = bmp.getSurface();
 		// TODO: Format conversion needed?
 		for (uint i = 0; i < image->h; i++)
-			memcpy(_screen->getBasePtr(x, y+i), image->getBasePtr(0, i), image->w);
+			memcpy(_screen->getBasePtr(x, y + i), image->getBasePtr(0, i), image->w);
 	} else
 		warning("loadBMP failure!");
 	imageFile.close();
 }
 
-const Common::Rect tileArea(13, 31, 13+(9*32), 31+(9*32));
+const Common::Rect tileArea(13, 31, 13 + (9 * 32), 31 + (9 * 32));
 
-const Common::Rect InvIcon0(314, 31, 314+32, 31+32);
-const Common::Rect InvDesc0(314+35, 31, 314+35+147, 31+32);
+const Common::Rect InvIcon0(314, 31, 314 + 32, 31 + 32);
+const Common::Rect InvDesc0(314 + 35, 31, 314 + 35 + 147, 31 + 32);
 
 // Reference is Apex Of Arrow
 const Common::Point UpArrow(347, 274);
@@ -257,25 +262,25 @@ const Common::Point DownArrow(347, 316);
 const Common::Point LeftArrow(326, 295);
 const Common::Point RightArrow(368, 295);
 
-const Common::Rect weaponArea(405, 280, 405+32, 280+32);
-const Common::Rect weaponPowerArea(405-16, 280, 405-16+8, 280+32);
+const Common::Rect weaponArea(405, 280, 405 + 32, 280 + 32);
+const Common::Rect weaponPowerArea(405 - 16, 280, 405 - 16 + 8, 280 + 32);
 
-const Common::Point health(480, 280+16);
+const Common::Point health(480, 280 + 16);
 
 const Common::String strFile("File");
 const Common::String strOptions("Options");
 const Common::String strWindow("Window");
 const Common::String strHelp("Help");
 
-const Common::Rect lFile(5, 5, 5+(6*strFile.size()), 17);
-const Common::Rect lOptions(lFile.right+15, lFile.top, lFile.right+15+(6*strOptions.size()), lFile.bottom);
-const Common::Rect lWindow(lOptions.right+15, lOptions.top, lOptions.right+15+(6*strWindow.size()), lOptions.bottom);
-const Common::Rect lHelp(lWindow.right+15, lWindow.top, lWindow.right+15+(6*strHelp.size()), lWindow.bottom);
+const Common::Rect lFile(5, 5, 5 + (6 * strFile.size()), 17);
+const Common::Rect lOptions(lFile.right + 15, lFile.top, lFile.right + 15 + (6 * strOptions.size()), lFile.bottom);
+const Common::Rect lWindow(lOptions.right + 15, lOptions.top, lOptions.right + 15 + (6 * strWindow.size()), lOptions.bottom);
+const Common::Rect lHelp(lWindow.right + 15, lWindow.top, lWindow.right + 15 + (6 * strHelp.size()), lWindow.bottom);
 
 void Gfx::drawScreenOutline(void) {
-	Common::Rect rect(1, 1, screenWidth-1, screenHeight-1);
+	Common::Rect rect(1, 1, screenWidth - 1, screenHeight - 1);
 	_screen->fillRect(rect, MEDIUM_GREY);
-	_screen->hLine(0, 18, screenWidth-1, BLACK);
+	_screen->hLine(0, 18, screenWidth - 1, BLACK);
 
 	// Menu Bar
 	_font->drawString(_screen, strFile, lFile.left, lFile.top, lFile.width(), BLACK, Graphics::kTextAlignLeft, 0, false);
@@ -283,7 +288,7 @@ void Gfx::drawScreenOutline(void) {
 	_font->drawString(_screen, strWindow, lWindow.left, lWindow.top, lWindow.width(), BLACK, Graphics::kTextAlignLeft, 0, false);
 	_font->drawString(_screen, strHelp, lHelp.left, lHelp.top, lHelp.width(), BLACK, Graphics::kTextAlignLeft, 0, false);
 
-	Common::Rect outer(4, 22, screenWidth-4, screenHeight-4);
+	Common::Rect outer(4, 22, screenWidth - 4, screenHeight - 4);
 	drawShadowFrame(&outer, false, false, 3);
 
 	_screen->fillRect(tileArea, BLACK);
@@ -312,91 +317,91 @@ void Gfx::drawScreenOutline(void) {
 
 	_screen->fillRect(InvScrUp, MEDIUM_GREY);
 	drawShadowFrame(&InvScrUp, false, false, 1);
-	_screen->hLine(InvScrUp.left-2, InvScrUp.bottom+1, InvScrUp.right+1, BLACK);
-	_screen->vLine(InvScrUp.right+1, InvScrUp.top-2, InvScrUp.bottom, BLACK);
+	_screen->hLine(InvScrUp.left - 2, InvScrUp.bottom + 1, InvScrUp.right + 1, BLACK);
+	_screen->vLine(InvScrUp.right + 1, InvScrUp.top - 2, InvScrUp.bottom, BLACK);
 	for (uint i = 0; i < 3; i++)
-		_screen->hLine(InvScrUp.left+5-i, InvScrUp.top+3+i, InvScrUp.left+5+i, BLACK);
+		_screen->hLine(InvScrUp.left + 5 - i, InvScrUp.top + 3 + i, InvScrUp.left + 5 + i, BLACK);
 
 	_screen->fillRect(InvScrDown, MEDIUM_GREY);
 	drawShadowFrame(&InvScrDown, false, false, 1);
-	_screen->hLine(InvScrDown.left-2, InvScrDown.bottom+1, InvScrDown.right+1, BLACK);
-	_screen->vLine(InvScrDown.right+1, InvScrDown.top-2, InvScrDown.bottom, BLACK);
+	_screen->hLine(InvScrDown.left - 2, InvScrDown.bottom + 1, InvScrDown.right + 1, BLACK);
+	_screen->vLine(InvScrDown.right + 1, InvScrDown.top - 2, InvScrDown.bottom, BLACK);
 	for (uint i = 0; i < 3; i++)
-		_screen->hLine(InvScrDown.left+5-i, InvScrDown.bottom-4-i, InvScrDown.left+5+i, BLACK);
+		_screen->hLine(InvScrDown.left + 5 - i, InvScrDown.bottom - 4 - i, InvScrDown.left + 5 + i, BLACK);
 
 	InvScrThumb->left = InvScrollOuter.left;
-	InvScrThumb->top = InvScrollOuter.top-2+40;
+	InvScrThumb->top = InvScrollOuter.top - 2 + 40;
 	InvScrThumb->right = InvScrollOuter.right;
-	InvScrThumb->bottom = InvScrollOuter.top+1+40+9;
+	InvScrThumb->bottom = InvScrollOuter.top + 1 + 40 + 9;
 	_screen->fillRect(*InvScrThumb, MEDIUM_GREY);
 	InvScrThumb->top += 2;
 	InvScrThumb->bottom -= 1;
 	InvScrThumb->left += 2;
 	InvScrThumb->right -= 2;
 	drawShadowFrame(InvScrThumb, false, false, 1);
-	_screen->hLine(InvScrThumb->left-2, InvScrThumb->bottom+1, InvScrThumb->right+1, BLACK);
-	_screen->vLine(InvScrThumb->right+1, InvScrThumb->top-2, InvScrThumb->bottom, BLACK);
+	_screen->hLine(InvScrThumb->left - 2, InvScrThumb->bottom + 1, InvScrThumb->right + 1, BLACK);
+	_screen->vLine(InvScrThumb->right + 1, InvScrThumb->top - 2, InvScrThumb->bottom, BLACK);
 
 	// Direction Arrows Outline
 	// Up Arrow
-	_screen->drawLine(UpArrow.x, UpArrow.y, UpArrow.x-7, UpArrow.y+7, ARROW_SHADOW);
-	_screen->drawLine(UpArrow.x, UpArrow.y, UpArrow.x+7, UpArrow.y+7, ARROW_SHADOW);
+	_screen->drawLine(UpArrow.x, UpArrow.y, UpArrow.x - 7, UpArrow.y + 7, ARROW_SHADOW);
+	_screen->drawLine(UpArrow.x, UpArrow.y, UpArrow.x + 7, UpArrow.y + 7, ARROW_SHADOW);
 
-	_screen->drawLine(UpArrow.x-7, UpArrow.y+7, UpArrow.x-7, UpArrow.y+7+2, ARROW_SHADOW);
-	_screen->drawLine(UpArrow.x+7, UpArrow.y+7, UpArrow.x+7, UpArrow.y+7+2, ARROW_SHADOW);
+	_screen->drawLine(UpArrow.x - 7, UpArrow.y + 7, UpArrow.x - 7, UpArrow.y + 7 + 2, ARROW_SHADOW);
+	_screen->drawLine(UpArrow.x + 7, UpArrow.y + 7, UpArrow.x + 7, UpArrow.y + 7 + 2, ARROW_SHADOW);
 
-	_screen->drawLine(UpArrow.x-7, UpArrow.y+7+2, UpArrow.x-7+4, UpArrow.y+7+2, WHITE);
-	_screen->drawLine(UpArrow.x+7, UpArrow.y+7+2, UpArrow.x+7-4, UpArrow.y+7+2, WHITE);
+	_screen->drawLine(UpArrow.x - 7, UpArrow.y + 7 + 2, UpArrow.x - 7 + 4, UpArrow.y + 7 + 2, WHITE);
+	_screen->drawLine(UpArrow.x + 7, UpArrow.y + 7 + 2, UpArrow.x + 7 - 4, UpArrow.y + 7 + 2, WHITE);
 
-	_screen->drawLine(UpArrow.x-7+4, UpArrow.y+7+2, UpArrow.x-7+4, UpArrow.y+7+2+4, ARROW_SHADOW);
-	_screen->drawLine(UpArrow.x+7-4, UpArrow.y+7+2, UpArrow.x+7-4, UpArrow.y+7+2+4, WHITE);
+	_screen->drawLine(UpArrow.x - 7 + 4, UpArrow.y + 7 + 2, UpArrow.x - 7 + 4, UpArrow.y + 7 + 2 + 4, ARROW_SHADOW);
+	_screen->drawLine(UpArrow.x + 7 - 4, UpArrow.y + 7 + 2, UpArrow.x + 7 - 4, UpArrow.y + 7 + 2 + 4, WHITE);
 
-	_screen->drawLine(UpArrow.x-7+4, UpArrow.y+7+2+4, UpArrow.x+7-4, UpArrow.y+7+2+4, WHITE);
+	_screen->drawLine(UpArrow.x - 7 + 4, UpArrow.y + 7 + 2 + 4, UpArrow.x + 7 - 4, UpArrow.y + 7 + 2 + 4, WHITE);
 
 	// Down Arrow
-	_screen->drawLine(DownArrow.x, DownArrow.y, DownArrow.x-7, DownArrow.y-7, ARROW_SHADOW);
-	_screen->drawLine(DownArrow.x, DownArrow.y, DownArrow.x+7, DownArrow.y-7, WHITE);
+	_screen->drawLine(DownArrow.x, DownArrow.y, DownArrow.x - 7, DownArrow.y - 7, ARROW_SHADOW);
+	_screen->drawLine(DownArrow.x, DownArrow.y, DownArrow.x + 7, DownArrow.y - 7, WHITE);
 
-	_screen->drawLine(DownArrow.x-7, DownArrow.y-7, DownArrow.x-7, DownArrow.y-7-2, ARROW_SHADOW);
-	_screen->drawLine(DownArrow.x+7, DownArrow.y-7, DownArrow.x+7, DownArrow.y-7-2, ARROW_SHADOW);
+	_screen->drawLine(DownArrow.x - 7, DownArrow.y - 7, DownArrow.x - 7, DownArrow.y - 7 - 2, ARROW_SHADOW);
+	_screen->drawLine(DownArrow.x + 7, DownArrow.y - 7, DownArrow.x + 7, DownArrow.y - 7 - 2, ARROW_SHADOW);
 
-	_screen->drawLine(DownArrow.x-7, DownArrow.y-7-2, DownArrow.x-7+4, DownArrow.y-7-2, ARROW_SHADOW);
-	_screen->drawLine(DownArrow.x+7, DownArrow.y-7-2, DownArrow.x+7-4, DownArrow.y-7-2, ARROW_SHADOW);
+	_screen->drawLine(DownArrow.x - 7, DownArrow.y - 7 - 2, DownArrow.x - 7 + 4, DownArrow.y - 7 - 2, ARROW_SHADOW);
+	_screen->drawLine(DownArrow.x + 7, DownArrow.y - 7 - 2, DownArrow.x + 7 - 4, DownArrow.y - 7 - 2, ARROW_SHADOW);
 
-	_screen->drawLine(DownArrow.x-7+4, DownArrow.y-7-2, DownArrow.x-7+4, DownArrow.y-7-2-4, ARROW_SHADOW);
-	_screen->drawLine(DownArrow.x+7-4, DownArrow.y-7-2, DownArrow.x+7-4, DownArrow.y-7-2-4, WHITE);
+	_screen->drawLine(DownArrow.x - 7 + 4, DownArrow.y - 7 - 2, DownArrow.x - 7 + 4, DownArrow.y - 7 - 2 - 4, ARROW_SHADOW);
+	_screen->drawLine(DownArrow.x + 7 - 4, DownArrow.y - 7 - 2, DownArrow.x + 7 - 4, DownArrow.y - 7 - 2 - 4, WHITE);
 
-	_screen->drawLine(DownArrow.x-7+4, DownArrow.y-7-2-4, DownArrow.x+7-4, DownArrow.y-7-2-4, ARROW_SHADOW);
+	_screen->drawLine(DownArrow.x - 7 + 4, DownArrow.y - 7 - 2 - 4, DownArrow.x + 7 - 4, DownArrow.y - 7 - 2 - 4, ARROW_SHADOW);
 
 	// Left Arrow
-	_screen->drawLine(LeftArrow.x, LeftArrow.y, LeftArrow.x+7, LeftArrow.y-7, ARROW_SHADOW);
-	_screen->drawLine(LeftArrow.x, LeftArrow.y, LeftArrow.x+7, LeftArrow.y+7, ARROW_SHADOW);
+	_screen->drawLine(LeftArrow.x, LeftArrow.y, LeftArrow.x + 7, LeftArrow.y - 7, ARROW_SHADOW);
+	_screen->drawLine(LeftArrow.x, LeftArrow.y, LeftArrow.x + 7, LeftArrow.y + 7, ARROW_SHADOW);
 
-	_screen->drawLine(LeftArrow.x+7, LeftArrow.y-7, LeftArrow.x+7+2, LeftArrow.y-7, ARROW_SHADOW);
-	_screen->drawLine(LeftArrow.x+7, LeftArrow.y+7, LeftArrow.x+7+2, LeftArrow.y+7, WHITE);
+	_screen->drawLine(LeftArrow.x + 7, LeftArrow.y - 7, LeftArrow.x + 7 + 2, LeftArrow.y - 7, ARROW_SHADOW);
+	_screen->drawLine(LeftArrow.x + 7, LeftArrow.y + 7, LeftArrow.x + 7 + 2, LeftArrow.y + 7, WHITE);
 
-	_screen->drawLine(LeftArrow.x+7+2, LeftArrow.y-7, LeftArrow.x+7+2, LeftArrow.y-7+4, WHITE);
-	_screen->drawLine(LeftArrow.x+7+2, LeftArrow.y+7, LeftArrow.x+7+2, LeftArrow.y+7-4, WHITE);
+	_screen->drawLine(LeftArrow.x + 7 + 2, LeftArrow.y - 7, LeftArrow.x + 7 + 2, LeftArrow.y - 7 + 4, WHITE);
+	_screen->drawLine(LeftArrow.x + 7 + 2, LeftArrow.y + 7, LeftArrow.x + 7 + 2, LeftArrow.y + 7 - 4, WHITE);
 
-	_screen->drawLine(LeftArrow.x+7+2, LeftArrow.y-7+4, LeftArrow.x+7+2+4, LeftArrow.y-7+4, ARROW_SHADOW);
-	_screen->drawLine(LeftArrow.x+7+2, LeftArrow.y+7-4, LeftArrow.x+7+2+4, LeftArrow.y+7-4, WHITE);
+	_screen->drawLine(LeftArrow.x + 7 + 2, LeftArrow.y - 7 + 4, LeftArrow.x + 7 + 2 + 4, LeftArrow.y - 7 + 4, ARROW_SHADOW);
+	_screen->drawLine(LeftArrow.x + 7 + 2, LeftArrow.y + 7 - 4, LeftArrow.x + 7 + 2 + 4, LeftArrow.y + 7 - 4, WHITE);
 
-	_screen->drawLine(LeftArrow.x+7+2+4, LeftArrow.y-7+4, LeftArrow.x+7+2+4, LeftArrow.y+7-4, WHITE);
+	_screen->drawLine(LeftArrow.x + 7 + 2 + 4, LeftArrow.y - 7 + 4, LeftArrow.x + 7 + 2 + 4, LeftArrow.y + 7 - 4, WHITE);
 
 	// Right Arrow
-	_screen->drawLine(RightArrow.x, RightArrow.y, RightArrow.x-7, RightArrow.y-7, ARROW_SHADOW);
-	_screen->drawLine(RightArrow.x, RightArrow.y, RightArrow.x-7, RightArrow.y+7, WHITE);
+	_screen->drawLine(RightArrow.x, RightArrow.y, RightArrow.x - 7, RightArrow.y - 7, ARROW_SHADOW);
+	_screen->drawLine(RightArrow.x, RightArrow.y, RightArrow.x - 7, RightArrow.y + 7, WHITE);
 
-	_screen->drawLine(RightArrow.x-7, RightArrow.y-7, RightArrow.x-7-2, RightArrow.y-7, ARROW_SHADOW);
-	_screen->drawLine(RightArrow.x-7, RightArrow.y+7, RightArrow.x-7-2, RightArrow.y+7, WHITE);
+	_screen->drawLine(RightArrow.x - 7, RightArrow.y - 7, RightArrow.x - 7 - 2, RightArrow.y - 7, ARROW_SHADOW);
+	_screen->drawLine(RightArrow.x - 7, RightArrow.y + 7, RightArrow.x - 7 - 2, RightArrow.y + 7, WHITE);
 
-	_screen->drawLine(RightArrow.x-7-2, RightArrow.y-7, RightArrow.x-7-2, RightArrow.y-7+4, ARROW_SHADOW);
-	_screen->drawLine(RightArrow.x-7-2, RightArrow.y+7, RightArrow.x-7-2, RightArrow.y+7-4, ARROW_SHADOW);
+	_screen->drawLine(RightArrow.x - 7 - 2, RightArrow.y - 7, RightArrow.x - 7 - 2, RightArrow.y - 7 + 4, ARROW_SHADOW);
+	_screen->drawLine(RightArrow.x - 7 - 2, RightArrow.y + 7, RightArrow.x - 7 - 2, RightArrow.y + 7 - 4, ARROW_SHADOW);
 
-	_screen->drawLine(RightArrow.x-7-2, RightArrow.y-7+4, RightArrow.x-7-2-4, RightArrow.y-7+4, ARROW_SHADOW);
-	_screen->drawLine(RightArrow.x-7-2, RightArrow.y+7-4, RightArrow.x-7-2-4, RightArrow.y+7-4, WHITE);
+	_screen->drawLine(RightArrow.x - 7 - 2, RightArrow.y - 7 + 4, RightArrow.x - 7 - 2 - 4, RightArrow.y - 7 + 4, ARROW_SHADOW);
+	_screen->drawLine(RightArrow.x - 7 - 2, RightArrow.y + 7 - 4, RightArrow.x - 7 - 2 - 4, RightArrow.y + 7 - 4, WHITE);
 
-	_screen->drawLine(RightArrow.x-7-2-4, RightArrow.y-7+4, RightArrow.x-7-2-4, RightArrow.y+7-4, ARROW_SHADOW);
+	_screen->drawLine(RightArrow.x - 7 - 2 - 4, RightArrow.y - 7 + 4, RightArrow.x - 7 - 2 - 4, RightArrow.y + 7 - 4, ARROW_SHADOW);
 
 	// WeaponArea
 	drawShadowFrame(&weaponArea, true, true, 3);
@@ -414,10 +419,10 @@ void Gfx::drawScreenOutline(void) {
 	// at end. Just use arbitary line drawing from centre to perimeter...
 	// GREEN, HEALTH_YELLOW, HEALTH_RED, BLACK
 
-	_screen->hLine(health.x-5, health.y, health.x+5, BLACK);
-	_screen->vLine(health.x, health.y-5, health.y+5, BLACK);
+	_screen->hLine(health.x - 5, health.y, health.x + 5, BLACK);
+	_screen->vLine(health.x, health.y - 5, health.y + 5, BLACK);
 
-	drawFilledCircle(_screen, health, 15+2, DARK_GREY);
+	drawFilledCircle(_screen, health, 15 + 2, DARK_GREY);
 	drawFilledCircle(_screen, health, 15, GREEN);
 }
 
@@ -425,7 +430,7 @@ void Gfx::drawStartup(void) {
 	byte *stup = _vm->_resource->getStupData();
 	for (uint y = 0; y < 9 * 32; y++) {
 		for (uint x = 0; x < 9 * 32; x++) {
-			*((byte *)_screen->getBasePtr(tileArea.left+x, tileArea.top+y)) = stup[(y*32*9)+x];
+			*((byte *)_screen->getBasePtr(tileArea.left + x, tileArea.top + y)) = stup[(y * 32 * 9) + x];
 		}
 	}
 	delete[] stup;
@@ -442,7 +447,7 @@ void Gfx::drawTile(uint32 ref, uint8 x, uint8 y) {
 		y = 8;
 	}
 
-	drawTileInt(ref, tileArea.left+(x*32), tileArea.top+(y*32), TRANSPARENT);
+	drawTileInt(ref, tileArea.left + (x * 32), tileArea.top + (y * 32), TRANSPARENT);
 }
 
 void Gfx::drawWeapon(uint32 ref) {
@@ -466,7 +471,7 @@ void Gfx::drawWeaponPower(uint8 level) {
 			color = MEDIUM_GREY;
 		else
 			color = POWER_BLUE;
-		_screen->hLine(weaponPowerArea.left, weaponPowerArea.bottom-i, weaponPowerArea.right, color);
+		_screen->hLine(weaponPowerArea.left, weaponPowerArea.bottom - i, weaponPowerArea.right, color);
 	}
 }
 
@@ -489,9 +494,9 @@ void Gfx::drawInventoryItem(uint slot, uint32 iconRef, const char *name) {
 	}
 
 	eraseInventoryItem(slot);
-	drawTileInt(iconRef, InvIcon0.left, InvIcon0.top+(slot*34), TRANSPARENT);
+	drawTileInt(iconRef, InvIcon0.left, InvIcon0.top + (slot * 34), TRANSPARENT);
 	const Common::String n(name);
-	_font->drawString(_screen, n, InvDesc0.left+5, InvDesc0.top+(slot*34)+12, InvDesc0.width()-10, BLACK, Graphics::kTextAlignLeft, 0, false);
+	_font->drawString(_screen, n, InvDesc0.left + 5, InvDesc0.top + (slot * 34) + 12, InvDesc0.width() - 10, BLACK, Graphics::kTextAlignLeft, 0, false);
 }
 
 const Common::Rect *Gfx::getInvScrUp(void) {
@@ -519,31 +524,31 @@ void Gfx::drawDirectionArrows(bool left, bool up, bool right, bool down) {
 
 	// Up Arrow
 	for (uint i = 0; i < 7; i++)
-		_screen->drawLine(UpArrow.x-i, UpArrow.y+1+i, UpArrow.x+i, UpArrow.y+1+i, colorUp);
-	_screen->drawLine(UpArrow.x-6, UpArrow.y+1+7, UpArrow.x+6, UpArrow.y+1+7, colorUp);
+		_screen->drawLine(UpArrow.x - i, UpArrow.y + 1 + i, UpArrow.x + i, UpArrow.y + 1 + i, colorUp);
+	_screen->drawLine(UpArrow.x - 6, UpArrow.y + 1 + 7, UpArrow.x + 6, UpArrow.y + 1 + 7, colorUp);
 	for (uint i = 0; i < 4; i++)
-		_screen->drawLine(UpArrow.x-7+5, UpArrow.y+1+8+i, UpArrow.x+7-5, UpArrow.y+1+8+i, colorUp);
+		_screen->drawLine(UpArrow.x - 7 + 5, UpArrow.y + 1 + 8 + i, UpArrow.x + 7 - 5, UpArrow.y + 1 + 8 + i, colorUp);
 
 	// Down Arrow
 	for (uint i = 0; i < 7; i++)
-		_screen->drawLine(DownArrow.x-i, DownArrow.y-1-i, DownArrow.x+i, DownArrow.y-1-i, colorDown);
-	_screen->drawLine(DownArrow.x-6, DownArrow.y-1-7, DownArrow.x+6, DownArrow.y-1-7, colorDown);
+		_screen->drawLine(DownArrow.x - i, DownArrow.y - 1 - i, DownArrow.x + i, DownArrow.y - 1 - i, colorDown);
+	_screen->drawLine(DownArrow.x - 6, DownArrow.y - 1 - 7, DownArrow.x + 6, DownArrow.y - 1 - 7, colorDown);
 	for (uint i = 0; i < 4; i++)
-		_screen->drawLine(DownArrow.x-7+5, DownArrow.y-1-8-i, DownArrow.x+7-5, DownArrow.y-1-8-i, colorDown);
+		_screen->drawLine(DownArrow.x - 7 + 5, DownArrow.y - 1 - 8 - i, DownArrow.x + 7 - 5, DownArrow.y - 1 - 8 - i, colorDown);
 
 	// Left Arrow
 	for (uint i = 0; i < 7; i++)
-		_screen->drawLine(LeftArrow.x+1+i, LeftArrow.y-i, LeftArrow.x+1+i, LeftArrow.y+i, colorLeft);
-	_screen->drawLine(LeftArrow.x+1+7, LeftArrow.y-6, LeftArrow.x+1+7, LeftArrow.y+6, colorLeft);
+		_screen->drawLine(LeftArrow.x + 1 + i, LeftArrow.y - i, LeftArrow.x + 1 + i, LeftArrow.y + i, colorLeft);
+	_screen->drawLine(LeftArrow.x + 1 + 7, LeftArrow.y - 6, LeftArrow.x + 1 + 7, LeftArrow.y + 6, colorLeft);
 	for (uint i = 0; i < 4; i++)
-		_screen->drawLine(LeftArrow.x+1+8+i, LeftArrow.y-7+5, LeftArrow.x+1+8+i, LeftArrow.y+7-5, colorLeft);
+		_screen->drawLine(LeftArrow.x + 1 + 8 + i, LeftArrow.y - 7 + 5, LeftArrow.x + 1 + 8 + i, LeftArrow.y + 7 - 5, colorLeft);
 
 	// Right Arrow
 	for (uint i = 0; i < 7; i++)
-		_screen->drawLine(RightArrow.x-1-i, RightArrow.y-i, RightArrow.x-1-i, RightArrow.y+i, colorRight);
-	_screen->drawLine(RightArrow.x-1-7, RightArrow.y-6, RightArrow.x-1-7, RightArrow.y+6, colorRight);
+		_screen->drawLine(RightArrow.x - 1 - i, RightArrow.y - i, RightArrow.x - 1 - i, RightArrow.y + i, colorRight);
+	_screen->drawLine(RightArrow.x - 1 - 7, RightArrow.y - 6, RightArrow.x - 1 - 7, RightArrow.y + 6, colorRight);
 	for (uint i = 0; i < 4; i++)
-		_screen->drawLine(RightArrow.x-1-8-i, RightArrow.y-7+5, RightArrow.x-1-8-i, RightArrow.y+7-5, colorRight);
+		_screen->drawLine(RightArrow.x - 1 - 8 - i, RightArrow.y - 7 + 5, RightArrow.x - 1 - 8 - i, RightArrow.y + 7 - 5, colorRight);
 }
 
 void Gfx::drawHealthMeter(uint level) {
@@ -579,21 +584,21 @@ void Gfx::drawShadowFrame(const Common::Rect *rect, bool recessed, bool firstInv
 
 	for (uint i = 0; i < thickness; i++) {
 		// Left Border
-		_screen->vLine(rect->left-1-i, rect->top-1-i, rect->bottom-1+1+i, (firstInverse && i == 0) ? BRColor : TLColor);
+		_screen->vLine(rect->left - 1 - i, rect->top - 1 - i, rect->bottom - 1 + 1 + i, (firstInverse && i == 0) ? BRColor : TLColor);
 
 		// Right Border
-		_screen->vLine(rect->right-1+1+i, rect->top-1-i, rect->bottom-1+1+i, (firstInverse && i == 0) ? TLColor : BRColor);
+		_screen->vLine(rect->right - 1 + 1 + i, rect->top - 1 - i, rect->bottom - 1 + 1 + i, (firstInverse && i == 0) ? TLColor : BRColor);
 
 		// Top Border
-		_screen->hLine(rect->left-1-i, rect->top-1-i, rect->right-1+1+i, (firstInverse && i == 0) ? BRColor : TLColor);
+		_screen->hLine(rect->left - 1 - i, rect->top - 1 - i, rect->right - 1 + 1 + i, (firstInverse && i == 0) ? BRColor : TLColor);
 
 		// Bottom Border
-		_screen->hLine(rect->left-1-i, rect->bottom-1+1+i, rect->right-1+1+i, (firstInverse && i == 0) ? TLColor : BRColor);
+		_screen->hLine(rect->left - 1 - i, rect->bottom - 1 + 1 + i, rect->right - 1 + 1 + i, (firstInverse && i == 0) ? TLColor : BRColor);
 	}
 }
 
 void Gfx::drawFrameCircle(Graphics::Surface *target, const Common::Point center, uint radius, uint color) {
-	#define setPixel(x, y, color) *((byte *)target->getBasePtr(x, y)) = color;
+#define setPixel(x, y, color) *((byte *)target->getBasePtr(x, y)) = color;
 
 	// Implementation of "midpoint circle algorithm" also known as "Bresenham's circle algorithm".
 	int f = 1 - radius;

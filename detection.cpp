@@ -52,6 +52,10 @@ Common::Language DeskadvEngine::getLanguage() const {
 	return _gameDescription->desc.language;
 }
 
+Common::Platform DeskadvEngine::getPlatform() const {
+	return _gameDescription->desc.platform;
+}
+
 }
 
 static const PlainGameDescriptor deskadvGames[] = {
@@ -64,16 +68,33 @@ namespace Deskadv {
 
 static const DeskadvGameDescription gameDescriptions[] = {
 
-	// Indiana Jones Desktop Adventures - English
+	// Indiana Jones Desktop Adventures - English / Win
 	{
 		{
 			"indydesk",
 			0,
-			{{"desktop.daw", 0, "173efd0c8aa63f20752445c07d9afd15", -1},
-			 {"deskadv.exe", 0, "df36d397f90f19f5daed425403cf9538", -1},
-			 AD_LISTEND},
+			{	{"desktop.daw", 0, "173efd0c8aa63f20752445c07d9afd15", -1},
+				{"deskadv.exe", 0, "df36d397f90f19f5daed425403cf9538", -1},
+				AD_LISTEND
+			},
 			Common::EN_ANY,
 			Common::kPlatformWindows,
+			ADGF_NO_FLAGS,
+			GUIO1(GUIO_NONE)
+		},
+		GType_Indy
+	},
+	// Indiana Jones Desktop Adventures - English / Mac
+	{
+		{
+			"indydesk",
+			0,
+			{	{"desktop.daw", 0, "173efd0c8aa63f20752445c07d9afd15", 2362801},
+				{"Indy’s Desktop Adventures", 0, "de50d71d8a2018c77b8a0f362c6b3738", 209797},
+				AD_LISTEND
+			},
+			Common::EN_ANY,
+			Common::kPlatformMacintosh,
 			ADGF_NO_FLAGS,
 			GUIO1(GUIO_NONE)
 		},
@@ -85,9 +106,10 @@ static const DeskadvGameDescription gameDescriptions[] = {
 		{
 			"indydesk",
 			"Demo",
-			{{"desktop.daw", 0, "c30d601f7fabc01cfa9bda154a99edb9", -1},
-			 {"deskadv.exe", 0, "2d561e0cfd8b3d9035af2e612e28eba8", -1},
-			 AD_LISTEND},
+			{	{"desktop.daw", 0, "c30d601f7fabc01cfa9bda154a99edb9", -1},
+				{"deskadv.exe", 0, "2d561e0cfd8b3d9035af2e612e28eba8", -1},
+				AD_LISTEND
+			},
 			Common::EN_ANY,
 			Common::kPlatformWindows,
 			ADGF_DEMO,
@@ -101,9 +123,10 @@ static const DeskadvGameDescription gameDescriptions[] = {
 		{
 			"yodadesk",
 			0,
-			{{"yodesk.dta", 0, "1d2afd3a6af3ff71c31582757060427d", -1},
-			 {"yodesk.exe", 0, "8c2a17262a9b93e3f8f198dc922e8e67", -1},
-			 AD_LISTEND},
+			{	{"yodesk.dta", 0, "1d2afd3a6af3ff71c31582757060427d", -1},
+				{"yodesk.exe", 0, "8c2a17262a9b93e3f8f198dc922e8e67", -1},
+				AD_LISTEND
+			},
 			Common::EN_ANY,
 			Common::kPlatformWindows,
 			ADGF_NO_FLAGS,
@@ -117,9 +140,10 @@ static const DeskadvGameDescription gameDescriptions[] = {
 		{
 			"yodadesk",
 			"Demo",
-			{{"yodademo.dta", 0, "1d2afd3a6af3ff71c31582757060427d", -1},
-			 {"yodademo.exe", 0, "6298347428cb02cf6a6d923ffc46f8ac", -1},
-			 AD_LISTEND},
+			{	{"yodademo.dta", 0, "1d2afd3a6af3ff71c31582757060427d", -1},
+				{"yodademo.exe", 0, "6298347428cb02cf6a6d923ffc46f8ac", -1},
+				AD_LISTEND
+			},
 			Common::EN_ANY,
 			Common::kPlatformWindows,
 			ADGF_DEMO,
