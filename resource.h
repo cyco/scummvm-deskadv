@@ -43,6 +43,20 @@ typedef struct zone {
 	uint16 *tiles[3];
 } ZONE;
 
+typedef struct script {
+	uint16 opcode;
+	uint16 args[5];
+	char *text;
+} SCRIPT;
+
+typedef struct hotspot {
+	uint32 type;
+	uint16 x;
+	uint16 y;
+	uint16 arg1;
+	uint16 arg2;
+} HOTSPOT;
+
 // Tile Flag Masks
 #define TILE_LOWER_USE_TRANSPARENCY 0x0001
 
@@ -55,21 +69,28 @@ public:
 
 	byte *getStupData(void);
 
-	uint32 getTileCount(void) { return _tileCount; }
+	uint32 getTileCount(void) {
+		return _tileCount;
+	}
 	byte *getTileData(uint32 ref);
 	uint16 getTileFlags(uint32 ref, bool upperField);
 	const char *getTileName(uint32 ref);
 
-	uint16 getZoneCount(void) { return _zoneCount; }
+	uint16 getZoneCount(void) {
+		return _zoneCount;
+	}
 	ZONE *getZone(uint num);
 
-	uint16 getSoundCount(void) { return _soundFiles.size(); }
+	uint16 getSoundCount(void) {
+		return _soundFiles.size();
+	}
 	const char *getSoundFilename(uint16 ref);
 
 private:
 	DeskadvEngine *_vm;
 
 	Common::File *_file;
+	bool _isYoda;
 
 	uint32 _stupOffset;
 
@@ -81,6 +102,10 @@ private:
 	Common::Array<ZONE> _zones;
 
 	Common::Array<Common::String> _soundFiles;
+
+	uint32 readTag(void);
+	SCRIPT *readScript();
+	HOTSPOT *readHotspot();
 };
 
 } // End of namespace Deskadv
